@@ -4,7 +4,7 @@ Created on Wed Feb  4 15:58:17 2026
 
 @author: lenovo
 """
-st.caption("For official planning use only. Data is processed temporarily and not stored.")
+#st.caption("For official planning use only. Data is processed temporarily and not stored.")
 
 import streamlit as st
 import pandas as pd
@@ -241,4 +241,5 @@ if uploaded_file:
     if st.button("❌ Exit Service"):
         st.success("Service ended. You may close this browser tab.")
         st.stop()
+
 
