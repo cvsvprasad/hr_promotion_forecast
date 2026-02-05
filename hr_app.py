@@ -52,19 +52,16 @@ def login():
 if not login():
     st.stop()
 
-# ===== SESSION TIMEOUT (15 MINUTES) =====
-
+# ===== SESSION TIMEOUT =====
 if time.time() - st.session_state.login_time > 900:
     st.session_state.logged_in = False
     st.warning("Session expired. Please login again.")
     st.stop()
 
 # ================= PAGE SETUP =================
-
 st.set_page_config(page_title="HR Promotion & Retirement Forecast", layout="wide")
 
 st.title("🏛 HR Promotion & Retirement Forecast System")
-
 st.caption("For official planning use only. Data is processed temporarily and not stored.")
 
 uploaded_file = st.file_uploader(
@@ -96,11 +93,10 @@ def eligible(current_date, needed_rank):
 def generate_pdf(master_df, promo_df, year_df, rank_df, cal_df, title):
 
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=36, rightMargin=36, topMargin=48, bottomMargin=36)
+    doc = SimpleDocTemplate(buf, pagesize=A4)
 
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="TitleC", alignment=TA_CENTER, fontSize=14))
-    styles.add(ParagraphStyle(name="Sec", fontSize=11))
     styles.add(ParagraphStyle(name="Cell", fontSize=8))
 
     story = []
@@ -112,31 +108,26 @@ def generate_pdf(master_df, promo_df, year_df, rank_df, cal_df, title):
 
     def add_table(df, widths):
         rows = [df.columns.tolist()] + df.values.tolist()
-        table = Table(rows, colWidths=widths, repeatRows=1)
-        table.setStyle(TableStyle([
+        t = Table(rows, colWidths=widths, repeatRows=1)
+        t.setStyle(TableStyle([
             ("GRID",(0,0),(-1,-1),0.5,colors.black),
             ("BACKGROUND",(0,0),(-1,0),colors.lightgrey),
             ("FONTSIZE",(0,0),(-1,-1),8)
         ]))
-        return table
+        return t
 
-    story.append(Paragraph("Master Data", styles["Sec"]))
     story.append(add_table(master_df,[40,130,60,45,75,220,35]))
     story.append(PageBreak())
 
-    story.append(Paragraph("Promotion History", styles["Sec"]))
     story.append(add_table(promo_df,[40,40,150,60,60,70]))
     story.append(PageBreak())
 
-    story.append(Paragraph("Year-wise Forecast", styles["Sec"]))
     story.append(add_table(year_df,[150,150,150]))
     story.append(PageBreak())
 
-    story.append(Paragraph("Rank-wise Forecast", styles["Sec"]))
     story.append(add_table(rank_df,[100,150,150]))
     story.append(PageBreak())
 
-    story.append(Paragraph("Calendar", styles["Sec"]))
     story.append(add_table(cal_df,[80,150,150,80]))
 
     doc.build(story)
@@ -148,8 +139,13 @@ def generate_pdf(master_df, promo_df, year_df, rank_df, cal_df, title):
 if uploaded_file:
 
     df = pd.read_excel(uploaded_file)
+
     df["DOB"] = df["DOB"].apply(parse_yy)
-    df["Date of Retirement"] = df["DOB"] + relativedelta(years=60)
+
+    # ⭐ FIXED RETIREMENT CALCULATION
+    df["Date of Retirement"] = df["DOB"].apply(
+        lambda x: x + relativedelta(years=60)
+    )
 
     employees = []
     for i,r in df.iterrows():
@@ -239,8 +235,6 @@ if uploaded_file:
 
     cal_df=pd.DataFrame(calendar,columns=["Date","Name","Event","Type"])
 
-    # ================= DISPLAY =================
-
     st.subheader("📋 Master Data")
     st.dataframe(master_df,use_container_width=True)
 
@@ -250,8 +244,7 @@ if uploaded_file:
     st.subheader("📊 Rank-wise Forecast")
     st.dataframe(rank_df)
 
-    # ================= DOWNLOADS =================
-
+    # ===== DOWNLOAD EXCEL =====
     base=os.path.splitext(uploaded_file.name)[0]
 
     excel_buf=io.BytesIO()
@@ -265,12 +258,12 @@ if uploaded_file:
 
     st.download_button("⬇ Download Excel Report",excel_buf,f"{base}_HR_Forecast.xlsx")
 
+    # ===== DOWNLOAD PDF =====
     pdf_buf=generate_pdf(master_df,promo_df,year_df,rank_df,cal_df,uploaded_file.name)
 
     st.download_button("🖨 Download Printable PDF",pdf_buf,f"{base}_HR_Forecast_Report.pdf")
 
-# ================= LOGOUT =================
-
+# ===== LOGOUT =====
 st.markdown("---")
 if st.button("🔓 Logout"):
     st.session_state.logged_in=False
