@@ -10,8 +10,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from collections import defaultdict
 import io, time, re
-import matplotlib.pyplot as plt
-
 # ================= PDF =================
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -271,3 +269,4 @@ st.markdown("---")
 if st.button("Logout"):
     st.session_state.logged_in = False
     st.rerun()
+
